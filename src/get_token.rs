@@ -1,4 +1,8 @@
 use crate::*;
+use futures::Future;
+use std::process::Command;
+use tokio::sync::{mpsc, oneshot};
+use warp::Filter;
 
 #[derive(Debug, Default, Deserialize, Clone)]
 #[serde(default)]
@@ -38,7 +42,7 @@ fn setup_server() -> (u32, impl Future<Output = CallbackQuery>) {
 }
 
 /// Top-level method enacting the procesure to receive an access token from a set of API keys
-pub fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
+pub async fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
     // Open an HTTP server on localhost to point the callback to
     let (port, answer) = setup_server();
     let callback_url = format!("http://localhost:{}/authorization", port);
@@ -53,8 +57,8 @@ pub fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
             None,
         );
         let request = reqwest::Url::parse_with_params(URL_REQUEST, &params)?;
-        let query = block_on(get_client().get(request).send())?;
-        serde_urlencoded::from_str(&block_on(query.text())?)?
+        let query = get_client().get(request).send().await?;
+        serde_urlencoded::from_str(&query.text().await?)?
     };
 
     let request_token = response.to_result()?;
@@ -77,7 +81,7 @@ pub fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
     }
 
     // Wait for the HTTP server to receive the callback query once the user accepted
-    let callback_data = block_on(answer);
+    let callback_data = answer.await;
 
     // Exchange the request token for an access token with the verifier received above
     let response: oauth::OauthAccessAnswer = {
@@ -89,8 +93,8 @@ pub fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
             Some(&request_token),
         );
         let access = reqwest::Url::parse_with_params(URL_ACCESS, &params)?;
-        let query = block_on(get_client().get(access).send())?;
-        serde_urlencoded::from_str(&block_on(query.text())?)?
+        let query = get_client().get(access).send().await?;
+        serde_urlencoded::from_str(&query.text().await?)?
     };
 
     response.to_result().map_err(|e| e.into())

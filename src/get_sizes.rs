@@ -36,7 +36,7 @@ impl FlickrGetSizesAnswer {
     }
 }
 
-pub fn photos_getsizes(
+pub async fn photos_getsizes(
     id: &String,
     api: &ApiKey,
     oauth: Option<&OauthToken>,
@@ -51,8 +51,8 @@ pub fn photos_getsizes(
     oauth::build_request(oauth::RequestTarget::Get(URL_API), &mut params, api, oauth);
 
     let url = reqwest::Url::parse_with_params(URL_API, &params)?;
-    let fetch = block_on(get_client().get(url).send())?;
-    let answer: FlickrGetSizesAnswer = block_on(fetch.json())?;
+    let fetch = get_client().get(url).send().await?;
+    let answer: FlickrGetSizesAnswer = fetch.json().await?;
 
     let FlickrSizeWrapper {
         sizes: FlickrSizes { size: information },

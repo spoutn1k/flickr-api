@@ -1,4 +1,5 @@
 use crate::*;
+use std::fs::read;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 #[serde(rename = "rsp")]
@@ -7,7 +8,7 @@ struct UploadXMLAnswer {
     photoid: String,
 }
 
-pub fn upload_photo_path(
+pub async fn upload_photo_path(
     path: &std::path::Path,
     api: &ApiKey,
     token: &OauthToken,
@@ -29,8 +30,8 @@ pub fn upload_photo_path(
             form.text(k, v)
         })
         .part("photo", photo_part);
-    let request = block_on(get_client().post(URL_UPLOAD).multipart(form).send())?;
-    let answer: UploadXMLAnswer = serde_xml_rs::from_str(&block_on(request.text())?)?;
+    let request = get_client().post(URL_UPLOAD).multipart(form).send().await?;
+    let answer: UploadXMLAnswer = serde_xml_rs::from_str(&request.text().await?)?;
     log::info!("Uploaded `{filename}` and received ID {}", answer.photoid);
 
     Ok(answer.photoid)

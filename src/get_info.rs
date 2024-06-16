@@ -187,7 +187,7 @@ pub struct Url {
     pub _content: String,
 }
 
-pub fn photos_getinfo(
+pub async fn photos_getinfo(
     id: &String,
     secret: Option<&String>,
     api: &ApiKey,
@@ -206,8 +206,8 @@ pub fn photos_getinfo(
     oauth::build_request(oauth::RequestTarget::Get(URL_API), &mut params, api, oauth);
 
     let url = reqwest::Url::parse_with_params(URL_API, &params)?;
-    let fetch = block_on(get_client().get(url).send())?;
-    let raw = block_on(fetch.text())?;
+    let fetch = get_client().get(url).send().await?;
+    let raw = fetch.text().await?;
     #[cfg(debug_assertions)]
     log::debug!("Received {raw}");
     let answer: FlickrGetInfoAnswer = serde_json::from_str(&raw)?;

@@ -1,14 +1,9 @@
-use futures::{executor::block_on, Future};
 use image::io::Reader;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::error::Error;
-use std::fs::read;
 use std::io::Cursor;
-use std::process::Command;
-use tokio::sync::{mpsc, oneshot};
 use warp::hyper::body::Bytes;
-use warp::Filter;
 
 pub mod oauth;
 use oauth::Resultable;
@@ -70,8 +65,8 @@ impl Display for FlickrError {
 }
 
 /// Convenience function to download an image using the library's client
-pub fn download_image(url: &String) -> Result<Reader<Cursor<Bytes>>, Box<dyn Error>> {
-    let res = block_on(get_client().get(url).send())?;
+pub async fn download_image(url: &String) -> Result<Reader<Cursor<Bytes>>, Box<dyn Error>> {
+    let res = get_client().get(url).send().await?;
 
-    Ok(Reader::new(Cursor::new(block_on(res.bytes())?)))
+    Ok(Reader::new(Cursor::new(res.bytes().await?)))
 }
