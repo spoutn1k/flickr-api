@@ -1,7 +1,7 @@
 use crate::*;
 
 /// A size descriptor as returned by flickr
-#[derive(Serialize, Deserialize, Debug, Hash, Clone)]
+#[derive(Deserialize, Debug, Hash, Clone)]
 pub struct FlickrSize {
     /// Internal label for the size format
     pub label: String,
@@ -11,17 +11,17 @@ pub struct FlickrSize {
     pub source: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash)]
+#[derive(Deserialize, Debug, Hash)]
 struct FlickrSizes {
     size: Vec<FlickrSize>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash)]
+#[derive(Deserialize, Debug, Hash)]
 struct FlickrSizeWrapper {
     sizes: FlickrSizes,
 }
 
-#[derive(Serialize, Deserialize, Debug, Hash)]
+#[derive(Deserialize, Debug, Hash)]
 #[serde(untagged)]
 enum FlickrGetSizesAnswer {
     Ok(FlickrSizeWrapper),
