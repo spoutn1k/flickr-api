@@ -5,8 +5,7 @@ use std::error::Error;
 use std::io::Cursor;
 use warp::hyper::body::Bytes;
 
-pub mod oauth;
-use oauth::Resultable;
+mod oauth;
 pub use oauth::{ApiKey, Token as OauthToken};
 
 mod get_info;
@@ -23,12 +22,13 @@ static URL_API: &str = "https://api.flickr.com/services/rest/";
 
 static URL_UPLOAD: &str = "https://up.flickr.com/services/upload/";
 
-pub static mut CLIENT: Option<reqwest::Client> = None;
+/// We use a single HTTP client as recreating it leads to some connection issues
+static mut CLIENT: Option<reqwest::Client> = None;
 
 pub use get_info::photos_getinfo;
-pub use get_sizes::photos_getsizes;
+pub use get_sizes::{photos_getsizes, FlickrSize};
 pub use get_token::get_token;
-pub use test_login::test_login;
+pub use test_login::{test_login, UserData};
 pub use upload_photo::upload_photo_path;
 
 fn get_client() -> &'static reqwest::Client {
@@ -41,7 +41,18 @@ fn get_client() -> &'static reqwest::Client {
     }
 }
 
-pub fn deserialize_content<'de, D>(deserializer: D) -> Result<String, D::Error>
+/// This is meant to turn the abominations the XML conversion creates into easier on the eyes
+/// structs:
+/// ```json
+/// "username": {
+///   "_contents": "itsame"
+/// }
+/// ```
+/// Becomes:
+/// ```rs
+/// username: String // "itsame"
+/// ```
+fn deserialize_content<'de, D>(deserializer: D) -> Result<String, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -49,8 +60,12 @@ where
     Ok(v["_content"].as_str().unwrap_or("").to_string())
 }
 
-/// Common error type for all flickr api answers
-#[derive(Serialize, Deserialize, Debug, Hash)]
+trait Resultable<T> {
+    fn to_result(self) -> Result<T, String>;
+}
+
+/// Common error type for all flickr API answers
+#[derive(Deserialize, Debug, Hash)]
 pub struct FlickrError {
     pub stat: String,
     pub code: u32,

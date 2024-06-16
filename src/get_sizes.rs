@@ -1,10 +1,13 @@
 use crate::*;
 
+/// A size descriptor as returned by flickr
 #[derive(Serialize, Deserialize, Debug, Hash, Clone)]
 pub struct FlickrSize {
+    /// Internal label for the size format
     pub label: String,
     pub width: u32,
     pub height: u32,
+    /// The url of the photo
     pub source: String,
 }
 
@@ -25,17 +28,19 @@ enum FlickrGetSizesAnswer {
     Err(FlickrError),
 }
 
-impl FlickrGetSizesAnswer {
-    fn ok(self) -> Result<FlickrSizeWrapper, Box<dyn Error>> {
+impl Resultable<Vec<FlickrSize>> for FlickrGetSizesAnswer {
+    fn to_result(self) -> Result<Vec<FlickrSize>, String> {
         match self {
-            FlickrGetSizesAnswer::Ok(k) => Ok(k),
-            FlickrGetSizesAnswer::Err(e) => {
-                Err(format!("flickr API call failed with code {}: {}", e.code, e.message).into())
-            }
+            FlickrGetSizesAnswer::Ok(FlickrSizeWrapper {
+                sizes: FlickrSizes { size },
+            }) => Ok(size),
+            FlickrGetSizesAnswer::Err(e) => Err(format!("{e}")),
         }
     }
 }
 
+/// [flickr.photos.getSizes](https://www.flickr.com/services/api/flickr.photos.getSizes.html)
+/// endpoint. Returns the available sizes for the photo of the given ID.
 pub async fn photos_getsizes(
     id: &String,
     api: &ApiKey,
@@ -54,9 +59,5 @@ pub async fn photos_getsizes(
     let fetch = get_client().get(url).send().await?;
     let answer: FlickrGetSizesAnswer = fetch.json().await?;
 
-    let FlickrSizeWrapper {
-        sizes: FlickrSizes { size: information },
-    } = answer.ok()?;
-
-    Ok(information)
+    answer.to_result().map_err(|e| e.into())
 }

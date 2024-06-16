@@ -1,3 +1,4 @@
+use crate::Resultable;
 use data_encoding::BASE64;
 use hmac::{Hmac, Mac};
 use itertools::Itertools;
@@ -7,20 +8,18 @@ use url::form_urlencoded;
 
 type HmacSha1 = Hmac<sha1::Sha1>;
 
+/// OAuth token
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct Token {
     pub token: String,
     pub secret: String,
 }
 
+/// flickr API key
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct ApiKey {
     pub key: String,
     pub secret: String,
-}
-
-pub trait Resultable<T> {
-    fn to_result(self) -> Result<T, String>;
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,30 +27,6 @@ pub trait Resultable<T> {
 pub enum OauthAccessAnswer {
     Ok(OauthAccessGranted),
     Err(OauthErrorDescription),
-}
-
-impl Resultable<OauthAccessGranted> for OauthAccessAnswer {
-    fn to_result(self) -> Result<OauthAccessGranted, String> {
-        match self {
-            OauthAccessAnswer::Ok(k) => Ok(k),
-            OauthAccessAnswer::Err(e) => Err(e.oauth_problem),
-        }
-    }
-}
-
-impl Resultable<Token> for OauthAccessAnswer {
-    fn to_result(self) -> Result<Token, String> {
-        match self {
-            OauthAccessAnswer::Ok(OauthAccessGranted {
-                fullname: _,
-                username: _,
-                user_nsid: _,
-                oauth_token: token,
-                oauth_token_secret: secret,
-            }) => Ok(Token { token, secret }),
-            OauthAccessAnswer::Err(e) => Err(e.oauth_problem),
-        }
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,6 +72,33 @@ pub struct OauthErrorDescription {
     pub debug_sbs: String,
 }
 
+impl Resultable<OauthAccessGranted> for OauthAccessAnswer {
+    fn to_result(self) -> Result<OauthAccessGranted, String> {
+        match self {
+            OauthAccessAnswer::Ok(k) => Ok(k),
+            OauthAccessAnswer::Err(e) => Err(e.oauth_problem),
+        }
+    }
+}
+
+impl Resultable<Token> for OauthAccessAnswer {
+    fn to_result(self) -> Result<Token, String> {
+        match self {
+            OauthAccessAnswer::Ok(OauthAccessGranted {
+                fullname: _,
+                username: _,
+                user_nsid: _,
+                oauth_token: token,
+                oauth_token_secret: secret,
+            }) => Ok(Token { token, secret }),
+            OauthAccessAnswer::Err(e) => Err(e.oauth_problem),
+        }
+    }
+}
+
+/// The type of request that this URL expects
+///
+/// This is used by the signature algorithm and needs to match what is done later.
 pub enum RequestTarget<'a> {
     Get(&'a str),
     Post(&'a str),
@@ -111,6 +113,11 @@ impl<'a> RequestTarget<'a> {
     }
 }
 
+/// Prepares a request to be sent with authentication
+///
+/// This supplements the given parameters with a signature and necessary oauth fields. This methods
+/// is dependent on the [RequestTarget] enum indicating which protocol to use as this influences
+/// the signature.
 pub fn build_request(
     target: RequestTarget,
     params: &mut Vec<(&'static str, String)>,

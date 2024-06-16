@@ -187,6 +187,11 @@ pub struct Url {
     pub _content: String,
 }
 
+/// [flickr.photos.getInfo](https://www.flickr.com/services/api/flickr.photos.getInfo.html)
+/// endpoint. Returns information associated with the photo of the given ID.
+///
+/// `secret` allows bypassing the permission checks if given. Does not require authentication but
+/// will authenticate the user if given the token.
 pub async fn photos_getinfo(
     id: &String,
     secret: Option<&String>,

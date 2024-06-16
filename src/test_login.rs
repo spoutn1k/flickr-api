@@ -22,6 +22,7 @@ impl Resultable<UserData> for TestLoginAnswer {
     }
 }
 
+/// User information as returned by flickr
 #[derive(Deserialize, Debug, Hash)]
 pub struct UserData {
     pub id: String,
@@ -29,6 +30,8 @@ pub struct UserData {
     pub username: String,
 }
 
+/// [flickr.test.login](https://www.flickr.com/services/api/flickr.test.login.html)
+/// endpoint. Check the login information
 pub async fn test_login(api: &ApiKey, token: &OauthToken) -> Result<UserData, Box<dyn Error>> {
     let mut params = vec![
         ("method", "flickr.test.login".into()),

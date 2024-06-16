@@ -8,6 +8,7 @@ struct UploadXMLAnswer {
     photoid: String,
 }
 
+/// Access the "special" upload API and upload a photo from a given path
 pub async fn upload_photo_path(
     path: &std::path::Path,
     api: &ApiKey,
@@ -32,7 +33,6 @@ pub async fn upload_photo_path(
         .part("photo", photo_part);
     let request = get_client().post(URL_UPLOAD).multipart(form).send().await?;
     let answer: UploadXMLAnswer = serde_xml_rs::from_str(&request.text().await?)?;
-    log::info!("Uploaded `{filename}` and received ID {}", answer.photoid);
 
     Ok(answer.photoid)
 }
