@@ -36,7 +36,7 @@ pub enum OauthTokenAnswer {
     Err(OauthErrorDescription),
 }
 
-impl Resultable<Token> for OauthTokenAnswer {
+impl Resultable<Token, String> for OauthTokenAnswer {
     fn to_result(self) -> Result<Token, String> {
         match self {
             OauthTokenAnswer::Ok(OauthTokenGranted {
@@ -72,7 +72,7 @@ pub struct OauthErrorDescription {
     pub debug_sbs: String,
 }
 
-impl Resultable<OauthAccessGranted> for OauthAccessAnswer {
+impl Resultable<OauthAccessGranted, String> for OauthAccessAnswer {
     fn to_result(self) -> Result<OauthAccessGranted, String> {
         match self {
             OauthAccessAnswer::Ok(k) => Ok(k),
@@ -81,7 +81,7 @@ impl Resultable<OauthAccessGranted> for OauthAccessAnswer {
     }
 }
 
-impl Resultable<Token> for OauthAccessAnswer {
+impl Resultable<Token, String> for OauthAccessAnswer {
     fn to_result(self) -> Result<Token, String> {
         match self {
             OauthAccessAnswer::Ok(OauthAccessGranted {

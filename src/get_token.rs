@@ -101,5 +101,5 @@ pub async fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
         serde_urlencoded::from_str(&query.text().await?)?
     };
 
-    response.to_result().map_err(|e| e.into())
+    response.to_result().map_err(|e: String| e.into())
 }

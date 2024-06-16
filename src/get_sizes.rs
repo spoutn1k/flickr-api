@@ -28,13 +28,13 @@ enum FlickrGetSizesAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<Vec<FlickrSize>> for FlickrGetSizesAnswer {
-    fn to_result(self) -> Result<Vec<FlickrSize>, String> {
+impl Resultable<Vec<FlickrSize>, Box<dyn Error>> for FlickrGetSizesAnswer {
+    fn to_result(self) -> Result<Vec<FlickrSize>, Box<dyn Error>> {
         match self {
             FlickrGetSizesAnswer::Ok(FlickrSizeWrapper {
                 sizes: FlickrSizes { size },
             }) => Ok(size),
-            FlickrGetSizesAnswer::Err(e) => Err(format!("{e}")),
+            FlickrGetSizesAnswer::Err(e) => Err(Box::new(e)),
         }
     }
 }
@@ -59,5 +59,5 @@ pub async fn photos_getsizes(
     let fetch = get_client().get(url).send().await?;
     let answer: FlickrGetSizesAnswer = fetch.json().await?;
 
-    answer.to_result().map_err(|e| e.into())
+    answer.to_result()
 }

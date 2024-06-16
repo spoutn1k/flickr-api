@@ -60,8 +60,8 @@ where
     Ok(v["_content"].as_str().unwrap_or("").to_string())
 }
 
-trait Resultable<T> {
-    fn to_result(self) -> Result<T, String>;
+trait Resultable<T, E> {
+    fn to_result(self) -> Result<T, E>;
 }
 
 /// Common error type for all flickr API answers
@@ -71,6 +71,8 @@ pub struct FlickrError {
     pub code: u32,
     pub message: String,
 }
+
+impl std::error::Error for FlickrError {}
 
 use std::fmt::Display;
 impl Display for FlickrError {

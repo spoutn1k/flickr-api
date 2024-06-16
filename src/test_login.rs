@@ -13,11 +13,11 @@ enum TestLoginAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<UserData> for TestLoginAnswer {
-    fn to_result(self) -> Result<UserData, String> {
+impl Resultable<UserData, Box<dyn Error>> for TestLoginAnswer {
+    fn to_result(self) -> Result<UserData, Box<dyn Error>> {
         match self {
             TestLoginAnswer::Ok(TestLoginAnswerSuccess { stat: _, user }) => Ok(user),
-            TestLoginAnswer::Err(e) => Err(format!("{e}")),
+            TestLoginAnswer::Err(e) => Err(Box::new(e)),
         }
     }
 }
@@ -50,5 +50,5 @@ pub async fn test_login(api: &ApiKey, token: &OauthToken) -> Result<UserData, Bo
     let request = get_client().get(url).send().await?;
     let login: TestLoginAnswer = request.json().await?;
 
-    login.to_result().map_err(|e| e.into())
+    login.to_result()
 }

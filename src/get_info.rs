@@ -8,11 +8,11 @@ enum FlickrGetInfoAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<PhotoInfo> for FlickrGetInfoAnswer {
-    fn to_result(self) -> Result<PhotoInfo, String> {
+impl Resultable<PhotoInfo, Box<dyn Error>> for FlickrGetInfoAnswer {
+    fn to_result(self) -> Result<PhotoInfo, Box<dyn Error>> {
         match self {
             FlickrGetInfoAnswer::Ok(info) => Ok(info.photo),
-            FlickrGetInfoAnswer::Err(e) => Err(format!("{e}")),
+            FlickrGetInfoAnswer::Err(e) => Err(Box::new(e)),
         }
     }
 }
@@ -217,5 +217,5 @@ pub async fn photos_getinfo(
     log::debug!("Received {raw}");
     let answer: FlickrGetInfoAnswer = serde_json::from_str(&raw)?;
 
-    answer.to_result().map_err(|e| e.into())
+    answer.to_result()
 }
