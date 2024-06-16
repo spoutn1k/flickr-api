@@ -2,6 +2,11 @@
 name = "flickr-api"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-3.0-or-later"
+description = "Easy interface to the Flickr API"
+homepage = "https://github.com/spoutn1k/flickr-api"
+repository = "https://github.com/spoutn1k/flickr-api"
+readme = "README.md"
 
 [dependencies]
 image = "0.24.6"
