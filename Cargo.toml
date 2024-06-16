@@ -1,0 +1,25 @@
+[package]
+name = "flickr-api"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image = "0.24.6"
+reqwest = { version = "0.12", features = ["blocking", "json", "multipart"]}
+warp = "0.3.7"
+tokio = { version = "1.38.0", features = ["macros"]}
+html-escape = "0.2.13"
+hmac = "0.12.1"
+sha1 = "0.10.6"
+url = "2.5.1"
+data-encoding = "2.6.0"
+serde_urlencoded = "0.7.1"
+futures-util = "0.3.30"
+futures = "0.3.30"
+serde-xml-rs = "0.6.0"
+serde_json = "1.0.117"
+log = "0.4.21"
+serde = { version = "1.0.203", features = ["derive"] }
+itertools = "0.13.0"
