@@ -12,7 +12,7 @@ pub use oauth::{ApiKey, Token as OauthToken};
 
 mod get_info;
 mod get_sizes;
-mod get_token;
+mod login;
 mod test_login;
 mod upload_photo;
 
