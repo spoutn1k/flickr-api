@@ -1,6 +1,8 @@
-use flickr_api::{ApiKey, FlickrAPI};
+use flickr_api::*;
+use std::env;
 use std::error::Error;
 use std::io::{self, Write};
+use std::path::Path;
 
 fn prompt(message: &str) -> String {
     // Create a new String to hold the user's input
@@ -23,6 +25,10 @@ fn prompt(message: &str) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
+    let arg = env::args().nth(1).unwrap();
+    let path = Path::new(&arg);
+    println!("Uploading {path:?}");
+
     let client = FlickrAPI::new(ApiKey {
         key: prompt("API key: "),
         secret: prompt("API secret: "),
@@ -30,9 +36,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .login()
     .await?;
 
-    let user = client.test().login().await?;
-
-    println!("Successfully logged in as {} ({})", user.username, user.id);
+    let id = client.photos().upload_from_path(&path).await?;
+    println!("Uploaded {path:?} and was given {id}");
 
     Ok(())
 }

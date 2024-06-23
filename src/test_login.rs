@@ -30,25 +30,27 @@ pub struct UserData {
     pub username: String,
 }
 
-/// [flickr.test.login](https://www.flickr.com/services/api/flickr.test.login.html)
-/// endpoint. Check the login information
-pub async fn test_login(api: &ApiKey, token: &OauthToken) -> Result<UserData, Box<dyn Error>> {
-    let mut params = vec![
-        ("method", "flickr.test.login".into()),
-        ("format", "json".into()),
-        ("nojsoncallback", "1".into()),
-    ];
+impl TestRequestBuilder {
+    /// [flickr.test.login](https://www.flickr.com/services/api/flickr.test.login.html)
+    /// endpoint. Check the login information
+    pub async fn login(&self) -> Result<UserData, Box<dyn Error>> {
+        let mut params = vec![
+            ("method", "flickr.test.login".into()),
+            ("format", "json".into()),
+            ("nojsoncallback", "1".into()),
+        ];
 
-    oauth::build_request(
-        oauth::RequestTarget::Get(URL_API),
-        &mut params,
-        api,
-        Some(token),
-    );
+        oauth::build_request(
+            oauth::RequestTarget::Get(URL_API),
+            &mut params,
+            &self.handle.key,
+            self.handle.token.as_ref(),
+        );
 
-    let url = reqwest::Url::parse_with_params(URL_API, &params)?;
-    let request = get_client().get(url).send().await?;
-    let login: TestLoginAnswer = request.json().await?;
+        let url = reqwest::Url::parse_with_params(URL_API, &params)?;
+        let request = self.handle.client.get(url).send().await?;
+        let login: TestLoginAnswer = request.json().await?;
 
-    login.to_result()
+        login.to_result()
+    }
 }

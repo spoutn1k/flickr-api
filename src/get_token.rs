@@ -41,65 +41,73 @@ fn setup_server() -> (u32, impl Future<Output = CallbackQuery>) {
     })
 }
 
-/// Top-level method enacting the procesure to receive an access token from a set of API keys
-///
-/// This method opens an HTTP server on port 8200. It will log an url to connect to for the user to
-/// accept the token, as well as use a generic open method to open the webpage (`open` on macos and
-/// `xdg-open` on linux)
-pub async fn get_token(api: &ApiKey) -> Result<OauthToken, Box<dyn Error>> {
-    // Open an HTTP server on localhost to point the callback to
-    let (port, answer) = setup_server();
-    let callback_url = format!("http://localhost:{}/authorization", port);
+impl FlickrAPI {
+    /// Top-level method enacting the procesure to receive an access token from a set of API keys
+    ///
+    /// This method opens an HTTP server on port 8200. It will log an url to connect to for the user to
+    /// accept the token, as well as use a generic open method to open the webpage (`open` on macos and
+    /// `xdg-open` on linux)
+    pub async fn login(self) -> Result<Self, Box<dyn Error>> {
+        // Open an HTTP server on localhost to point the callback to
+        let (port, answer) = setup_server();
+        let callback_url = format!("http://localhost:{}/authorization", port);
 
-    // Use the api keys to ask for a request token
-    let response: oauth::OauthTokenAnswer = {
-        let mut params = vec![("oauth_callback", callback_url)];
-        oauth::build_request(
-            oauth::RequestTarget::Get(URL_REQUEST),
-            &mut params,
-            &api,
-            None,
-        );
-        let request = reqwest::Url::parse_with_params(URL_REQUEST, &params)?;
-        let query = get_client().get(request).send().await?;
-        serde_urlencoded::from_str(&query.text().await?)?
-    };
+        // Use the api keys to ask for a request token
+        let response: oauth::OauthTokenAnswer = {
+            let mut params = vec![("oauth_callback", callback_url)];
+            oauth::build_request(
+                oauth::RequestTarget::Get(URL_REQUEST),
+                &mut params,
+                &self.data.key,
+                None,
+            );
+            let request = reqwest::Url::parse_with_params(URL_REQUEST, &params)?;
+            let query = self.data.client.get(request).send().await?;
+            serde_urlencoded::from_str(&query.text().await?)?
+        };
 
-    let request_token = response.to_result()?;
+        let request_token = response.to_result()?;
 
-    // Prepare the link for the user to grant permission
-    {
-        let params = vec![
-            ("oauth_token", request_token.token.clone()),
-            ("perms", "write".to_string()),
-        ];
-        let url = reqwest::Url::parse_with_params(URL_AUTHORIZE, params)?.to_string();
+        // Prepare the link for the user to grant permission
+        {
+            let params = vec![
+                ("oauth_token", request_token.token.clone()),
+                ("perms", "write".to_string()),
+            ];
+            let url = reqwest::Url::parse_with_params(URL_AUTHORIZE, params)?.to_string();
 
-        log::info!("OAuth link: {url}");
+            log::info!("OAuth link: {url}");
 
-        #[cfg(target_os = "macos")]
-        Command::new("open").args(vec![url]).spawn()?;
+            #[cfg(target_os = "macos")]
+            Command::new("open").args(vec![url]).spawn()?;
 
-        #[cfg(target_os = "linux")]
-        Command::new("xdg-open").args(vec![url]).spawn()?;
+            #[cfg(target_os = "linux")]
+            Command::new("xdg-open").args(vec![url]).spawn()?;
+        }
+
+        // Wait for the HTTP server to receive the callback query once the user accepted
+        let callback_data = answer.await;
+
+        // Exchange the request token for an access token with the verifier received above
+        let response: oauth::OauthAccessAnswer = {
+            let mut params = vec![("oauth_verifier", callback_data.oauth_verifier)];
+            oauth::build_request(
+                oauth::RequestTarget::Get(URL_ACCESS),
+                &mut params,
+                &self.data.key,
+                Some(&request_token),
+            );
+            let access = reqwest::Url::parse_with_params(URL_ACCESS, &params)?;
+            let query = self.data.client.get(access).send().await?;
+            serde_urlencoded::from_str(&query.text().await?)?
+        };
+
+        let token = response.to_result()?;
+        let mut data = (*self.data).clone();
+        data.token = Some(token);
+
+        Ok(FlickrAPI {
+            data: Rc::new(data),
+        })
     }
-
-    // Wait for the HTTP server to receive the callback query once the user accepted
-    let callback_data = answer.await;
-
-    // Exchange the request token for an access token with the verifier received above
-    let response: oauth::OauthAccessAnswer = {
-        let mut params = vec![("oauth_verifier", callback_data.oauth_verifier)];
-        oauth::build_request(
-            oauth::RequestTarget::Get(URL_ACCESS),
-            &mut params,
-            api,
-            Some(&request_token),
-        );
-        let access = reqwest::Url::parse_with_params(URL_ACCESS, &params)?;
-        let query = get_client().get(access).send().await?;
-        serde_urlencoded::from_str(&query.text().await?)?
-    };
-
-    response.to_result().map_err(|e: String| e.into())
 }

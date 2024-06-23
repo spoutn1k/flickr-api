@@ -39,25 +39,28 @@ impl Resultable<Vec<FlickrSize>, Box<dyn Error>> for FlickrGetSizesAnswer {
     }
 }
 
-/// [flickr.photos.getSizes](https://www.flickr.com/services/api/flickr.photos.getSizes.html)
-/// endpoint. Returns the available sizes for the photo of the given ID.
-pub async fn photos_getsizes(
-    id: &String,
-    api: &ApiKey,
-    oauth: Option<&OauthToken>,
-) -> Result<Vec<FlickrSize>, Box<dyn Error>> {
-    let mut params = vec![
-        ("nojsoncallback", "1".into()),
-        ("method", "flickr.photos.getSizes".into()),
-        ("format", "json".into()),
-        ("api_key", api.key.clone()),
-        ("photo_id", id.clone()),
-    ];
-    oauth::build_request(oauth::RequestTarget::Get(URL_API), &mut params, api, oauth);
+impl PhotoRequestBuilder {
+    /// [flickr.photos.getSizes](https://www.flickr.com/services/api/flickr.photos.getSizes.html)
+    /// endpoint. Returns the available sizes for the photo of the given ID.
+    pub async fn get_sizes(&self, id: &String) -> Result<Vec<FlickrSize>, Box<dyn Error>> {
+        let mut params = vec![
+            ("nojsoncallback", "1".into()),
+            ("method", "flickr.photos.getSizes".into()),
+            ("format", "json".into()),
+            ("api_key", self.handle.key.key.clone()),
+            ("photo_id", id.clone()),
+        ];
+        oauth::build_request(
+            oauth::RequestTarget::Get(URL_API),
+            &mut params,
+            &self.handle.key,
+            self.handle.token.as_ref(),
+        );
 
-    let url = reqwest::Url::parse_with_params(URL_API, &params)?;
-    let fetch = get_client().get(url).send().await?;
-    let answer: FlickrGetSizesAnswer = fetch.json().await?;
+        let url = reqwest::Url::parse_with_params(URL_API, &params)?;
+        let fetch = self.handle.client.get(url).send().await?;
+        let answer: FlickrGetSizesAnswer = fetch.json().await?;
 
-    answer.to_result()
+        answer.to_result()
+    }
 }

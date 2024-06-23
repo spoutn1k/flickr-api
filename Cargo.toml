@@ -14,7 +14,7 @@ categories = ["api-bindings"]
 image = "0.24.6"
 reqwest = { version = "0.12", features = ["json", "multipart"]}
 warp = "0.3.7"
-tokio = { version = "1.38.0", features = ["macros"]}
+tokio = { version = "1.38.0", features = ["macros", "rt-multi-thread"] }
 html-escape = "0.2.13"
 hmac = "0.12.1"
 sha1 = "0.10.6"

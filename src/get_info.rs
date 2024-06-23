@@ -187,35 +187,41 @@ pub struct Url {
     pub _content: String,
 }
 
-/// [flickr.photos.getInfo](https://www.flickr.com/services/api/flickr.photos.getInfo.html)
-/// endpoint. Returns information associated with the photo of the given ID.
-///
-/// `secret` allows bypassing the permission checks if given. Does not require authentication but
-/// will authenticate the user if given the token.
-pub async fn photos_getinfo(
-    id: &String,
-    secret: Option<&String>,
-    api: &ApiKey,
-    oauth: Option<&OauthToken>,
-) -> Result<PhotoInfo, Box<dyn Error>> {
-    let mut params = vec![
-        ("method", "flickr.photos.getInfo".into()),
-        ("photo_id", id.clone()),
-        ("nojsoncallback", "1".into()),
-        ("format", "json".into()),
-        ("api_key", api.key.clone()),
-    ];
-    if let Some(value) = secret {
-        params.push(("secret", value.clone()));
+impl PhotoRequestBuilder {
+    /// [flickr.photos.getInfo](https://www.flickr.com/services/api/flickr.photos.getInfo.html)
+    /// endpoint. Returns information associated with the photo of the given ID.
+    ///
+    /// `secret` allows bypassing the permission checks if given. Does not require authentication but
+    /// will authenticate the user if given the token.
+    pub async fn get_info(
+        &self,
+        id: &String,
+        secret: Option<&String>,
+    ) -> Result<PhotoInfo, Box<dyn Error>> {
+        let mut params = vec![
+            ("method", "flickr.photos.getInfo".into()),
+            ("photo_id", id.clone()),
+            ("nojsoncallback", "1".into()),
+            ("format", "json".into()),
+            ("api_key", self.handle.key.key.clone()),
+        ];
+        if let Some(value) = secret {
+            params.push(("secret", value.clone()));
+        }
+        oauth::build_request(
+            oauth::RequestTarget::Get(URL_API),
+            &mut params,
+            &self.handle.key,
+            self.handle.token.as_ref(),
+        );
+
+        let url = reqwest::Url::parse_with_params(URL_API, &params)?;
+        let fetch = self.handle.client.get(url).send().await?;
+        let raw = fetch.text().await?;
+        #[cfg(debug_assertions)]
+        log::debug!("Received {raw}");
+        let answer: FlickrGetInfoAnswer = serde_json::from_str(&raw)?;
+
+        answer.to_result()
     }
-    oauth::build_request(oauth::RequestTarget::Get(URL_API), &mut params, api, oauth);
-
-    let url = reqwest::Url::parse_with_params(URL_API, &params)?;
-    let fetch = get_client().get(url).send().await?;
-    let raw = fetch.text().await?;
-    #[cfg(debug_assertions)]
-    log::debug!("Received {raw}");
-    let answer: FlickrGetInfoAnswer = serde_json::from_str(&raw)?;
-
-    answer.to_result()
 }

@@ -1,8 +1,10 @@
+#![allow(dead_code)]
 use image::io::Reader;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::error::Error;
 use std::io::Cursor;
+use std::rc::Rc;
 use warp::hyper::body::Bytes;
 
 mod oauth;
@@ -22,24 +24,8 @@ static URL_API: &str = "https://api.flickr.com/services/rest/";
 
 static URL_UPLOAD: &str = "https://up.flickr.com/services/upload/";
 
-/// We use a single HTTP client as recreating it leads to some connection issues
-static mut CLIENT: Option<reqwest::Client> = None;
-
-pub use get_info::photos_getinfo;
-pub use get_sizes::{photos_getsizes, FlickrSize};
-pub use get_token::get_token;
-pub use test_login::{test_login, UserData};
-pub use upload_photo::upload_photo_path;
-
-fn get_client() -> &'static reqwest::Client {
-    unsafe {
-        if CLIENT.is_none() {
-            CLIENT = Some(reqwest::Client::new())
-        }
-
-        CLIENT.as_ref().unwrap()
-    }
-}
+pub use get_sizes::FlickrSize;
+pub use test_login::UserData;
 
 /// This is meant to turn the abominations the XML conversion creates into easier on the eyes
 /// structs:
@@ -83,7 +69,60 @@ impl Display for FlickrError {
 
 /// Convenience function to download an image using the library's client
 pub async fn download_image(url: &String) -> Result<Reader<Cursor<Bytes>>, Box<dyn Error>> {
-    let res = get_client().get(url).send().await?;
+    let res = reqwest::get(url).await?;
 
     Ok(Reader::new(Cursor::new(res.bytes().await?)))
+}
+
+#[derive(Clone)]
+struct FlickrAPIData {
+    client: reqwest::Client,
+    key: ApiKey,
+    token: Option<OauthToken>,
+}
+
+/// API client
+pub struct FlickrAPI {
+    data: Rc<FlickrAPIData>,
+}
+
+pub struct PhotoRequestBuilder {
+    handle: Rc<FlickrAPIData>,
+}
+
+pub struct TestRequestBuilder {
+    handle: Rc<FlickrAPIData>,
+}
+
+impl FlickrAPI {
+    pub fn new(key: ApiKey) -> Self {
+        let data = Rc::new(FlickrAPIData {
+            client: reqwest::Client::new(),
+            key,
+            token: None,
+        });
+
+        FlickrAPI { data }
+    }
+
+    pub fn with_token(self, token: OauthToken) -> Self {
+        let mut data = (*self.data).clone();
+        data.token = Some(token);
+
+        FlickrAPI {
+            data: Rc::new(data),
+        }
+    }
+
+    pub fn photos(&self) -> PhotoRequestBuilder {
+        PhotoRequestBuilder {
+            handle: self.data.clone(),
+        }
+    }
+
+    pub fn test(&self) -> TestRequestBuilder {
+        TestRequestBuilder {
+            handle: self.data.clone(),
+        }
+    }
 }
