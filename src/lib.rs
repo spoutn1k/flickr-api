@@ -10,11 +10,11 @@ use warp::hyper::body::Bytes;
 mod oauth;
 pub use oauth::{ApiKey, Token as OauthToken};
 
-mod get_info;
-mod get_sizes;
-mod login;
-mod test_login;
-mod upload_photo;
+pub mod get_info;
+pub mod get_sizes;
+pub mod login;
+pub mod test_login;
+pub mod upload_photo;
 
 static URL_ACCESS: &str = "https://www.flickr.com/services/oauth/access_token";
 static URL_AUTHORIZE: &str = "https://www.flickr.com/services/oauth/authorize";
@@ -112,6 +112,10 @@ impl FlickrAPI {
         FlickrAPI {
             data: Rc::new(data),
         }
+    }
+
+    pub fn token(&self) -> Option<OauthToken> {
+        self.data.token.clone()
     }
 
     pub fn photos(&self) -> PhotoRequestBuilder {
