@@ -36,7 +36,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
     .login()
     .await?;
 
-    let id = client.photos().upload_from_path(&path).await?;
+    let id = client
+        .photos()
+        .upload_from_path(&path, UploadOptions::default())
+        .await?;
     println!("Uploaded {path:?} and was given {id}");
 
     Ok(())
