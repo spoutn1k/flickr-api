@@ -51,14 +51,16 @@ pub struct PhotoInfo {
     #[serde(deserialize_with = "deserialize_content")]
     pub comments: String,
 
-    pub permissions: Permissions,
+    // Only present when authenticated as the photo's owner
+    pub permissions: Option<Permissions>,
     pub editability: Editability,
     pub publiceditability: Editability,
 
-    // Either "" or a whole object
-    pub location: Location,
+    // Absent if the photo has no geodata, otherwise either "" or a whole object
+    pub location: Option<Location>,
 
-    pub geoperms: GeoPerms,
+    // Only present when authenticated
+    pub geoperms: Option<GeoPerms>,
 
     pub notes: NoteWrapper,
     pub tags: TagWrapper,
@@ -102,7 +104,8 @@ pub struct Editability {
 pub struct Usage {
     pub candownload: u32,
     pub canblog: u32,
-    pub canprint: u32,
+    // Absent on unauthenticated responses
+    pub canprint: Option<u32>,
     pub canshare: u32,
 }
 
@@ -223,5 +226,37 @@ impl PhotoRequestBuilder {
         let answer: FlickrGetInfoAnswer = serde_json::from_str(&raw)?;
 
         answer.to_result()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Unauthenticated calls omit `permissions` and `geoperms`, and photos without geodata omit
+    /// `location` entirely rather than sending an empty value.
+    #[test]
+    fn parses_unauthenticated_response_without_permissions_geoperms_or_location() {
+        let raw = r#"{"photo":{"id":"1","secret":"a","server":"1","farm":1,"dateuploaded":"1",
+            "isfavorite":0,"license":"0","safety_level":"0","rotation":0,"originalsecret":"b",
+            "originalformat":"jpg","owner":{"nsid":"1@N00","username":"u","realname":"r",
+            "location":"","iconserver":"1","iconfarm":1,"path_alias":null},
+            "title":{"_content":"t"},"description":{"_content":"d"},
+            "dates":{"posted":"1","taken":"2026-01-25 15:00:01","takengranularity":0,
+            "takenunknown":"0","lastupdate":"1"},"views":"1",
+            "editability":{"cancomment":0,"canaddmeta":0},
+            "publiceditability":{"cancomment":1,"canaddmeta":0},
+            "usage":{"candownload":1,"canblog":0,"canshare":1},
+            "comments":{"_content":"0"},"notes":{"note":[]},"tags":{"tag":[]},
+            "urls":{"url":[{"type":"photopage","_content":"https://example.com/"}]},
+            "media":"photo"},"stat":"ok"}"#;
+
+        let answer: FlickrGetInfoAnswer = serde_json::from_str(raw).unwrap();
+        let info = answer.to_result().unwrap();
+
+        assert!(info.permissions.is_none());
+        assert!(info.geoperms.is_none());
+        assert!(info.location.is_none());
+        assert!(info.usage.canprint.is_none());
     }
 }
