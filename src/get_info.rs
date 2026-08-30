@@ -8,11 +8,11 @@ enum FlickrGetInfoAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<PhotoInfo, Box<dyn Error>> for FlickrGetInfoAnswer {
-    fn to_result(self) -> Result<PhotoInfo, Box<dyn Error>> {
+impl Resultable<PhotoInfo, Error> for FlickrGetInfoAnswer {
+    fn to_result(self) -> Result<PhotoInfo, Error> {
         match self {
             FlickrGetInfoAnswer::Ok(info) => Ok(info.photo),
-            FlickrGetInfoAnswer::Err(e) => Err(Box::new(e)),
+            FlickrGetInfoAnswer::Err(e) => Err(Error::Api(e)),
         }
     }
 }
@@ -205,11 +205,7 @@ impl PhotoRequestBuilder {
     ///
     /// `secret` allows bypassing the permission checks if given. Does not require authentication but
     /// will authenticate the user if given the token.
-    pub async fn get_info(
-        &self,
-        id: &String,
-        secret: Option<&String>,
-    ) -> Result<PhotoInfo, Box<dyn Error>> {
+    pub async fn get_info(&self, id: &String, secret: Option<&String>) -> Result<PhotoInfo, Error> {
         let mut params = vec![
             ("method", "flickr.photos.getInfo".into()),
             ("photo_id", id.clone()),

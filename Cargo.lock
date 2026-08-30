@@ -477,6 +477,7 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "sha1",
+ "thiserror 2.0.20",
  "tokio",
  "url",
  "warp",

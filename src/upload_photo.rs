@@ -134,7 +134,7 @@ impl PhotoRequestBuilder {
         &self,
         path: &Path,
         options: UploadOptions,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<String, Error> {
         self.upload(
             &read(path).await?,
             Some(String::from(
@@ -153,7 +153,7 @@ impl PhotoRequestBuilder {
         photo: &[u8],
         filename: Option<String>,
         options: UploadOptions,
-    ) -> Result<String, Box<dyn Error>> {
+    ) -> Result<String, Error> {
         // Metadata fields must be signed as part of the OAuth request, so they need to be in `params` before `build_request` computes the signature.
         let mut params = options.into_params();
         oauth::build_request(

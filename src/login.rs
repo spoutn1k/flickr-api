@@ -47,7 +47,7 @@ impl FlickrAPI {
     /// This method opens an HTTP server on port 8200. It will log an url to connect to for the user to
     /// accept the token, as well as use a generic open method to open the webpage (`open` on macos and
     /// `xdg-open` on linux)
-    pub async fn login(self) -> Result<Self, Box<dyn Error>> {
+    pub async fn login(self) -> Result<Self, Error> {
         // Open an HTTP server on localhost to point the callback to
         let (port, answer) = setup_server();
         let callback_url = format!("http://localhost:{}/authorization", port);

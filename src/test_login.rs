@@ -13,11 +13,11 @@ enum TestLoginAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<UserData, Box<dyn Error>> for TestLoginAnswer {
-    fn to_result(self) -> Result<UserData, Box<dyn Error>> {
+impl Resultable<UserData, Error> for TestLoginAnswer {
+    fn to_result(self) -> Result<UserData, Error> {
         match self {
             TestLoginAnswer::Ok(TestLoginAnswerSuccess { stat: _, user }) => Ok(user),
-            TestLoginAnswer::Err(e) => Err(Box::new(e)),
+            TestLoginAnswer::Err(e) => Err(Error::Api(e)),
         }
     }
 }
@@ -33,7 +33,7 @@ pub struct UserData {
 impl TestRequestBuilder {
     /// [flickr.test.login](https://www.flickr.com/services/api/flickr.test.login.html)
     /// endpoint. Check the login information
-    pub async fn login(&self) -> Result<UserData, Box<dyn Error>> {
+    pub async fn login(&self) -> Result<UserData, Error> {
         let mut params = vec![
             ("method", "flickr.test.login".into()),
             ("format", "json".into()),

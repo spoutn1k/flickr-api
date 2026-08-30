@@ -2,12 +2,13 @@
 use image::io::Reader;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
-use std::error::Error;
 use std::io::Cursor;
 use std::rc::Rc;
 use warp::hyper::body::Bytes;
 
+mod error;
 mod oauth;
+pub use error::Error;
 pub use oauth::{ApiKey, Token as OauthToken};
 
 pub mod get_info;
@@ -69,7 +70,7 @@ impl Display for FlickrError {
 }
 
 /// Convenience function to download an image using the library's client
-pub async fn download_image(url: &String) -> Result<Reader<Cursor<Bytes>>, Box<dyn Error>> {
+pub async fn download_image(url: &String) -> Result<Reader<Cursor<Bytes>>, Error> {
     let res = reqwest::get(url).await?;
 
     Ok(Reader::new(Cursor::new(res.bytes().await?)))

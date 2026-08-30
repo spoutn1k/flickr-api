@@ -35,11 +35,11 @@ enum FlickrGetSizesAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<PhotoSizes, Box<dyn Error>> for FlickrGetSizesAnswer {
-    fn to_result(self) -> Result<PhotoSizes, Box<dyn Error>> {
+impl Resultable<PhotoSizes, Error> for FlickrGetSizesAnswer {
+    fn to_result(self) -> Result<PhotoSizes, Error> {
         match self {
             FlickrGetSizesAnswer::Ok(FlickrSizeWrapper { sizes }) => Ok(sizes),
-            FlickrGetSizesAnswer::Err(e) => Err(Box::new(e)),
+            FlickrGetSizesAnswer::Err(e) => Err(Error::Api(e)),
         }
     }
 }
@@ -47,7 +47,7 @@ impl Resultable<PhotoSizes, Box<dyn Error>> for FlickrGetSizesAnswer {
 impl PhotoRequestBuilder {
     /// [flickr.photos.getSizes](https://www.flickr.com/services/api/flickr.photos.getSizes.html)
     /// endpoint. Returns the available sizes for the photo of the given ID.
-    pub async fn get_sizes(&self, id: &String) -> Result<PhotoSizes, Box<dyn Error>> {
+    pub async fn get_sizes(&self, id: &String) -> Result<PhotoSizes, Error> {
         let mut params = vec![
             ("nojsoncallback", "1".into()),
             ("method", "flickr.photos.getSizes".into()),
