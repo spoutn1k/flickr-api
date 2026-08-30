@@ -7,18 +7,25 @@ pub struct FlickrSize {
     pub label: String,
     pub width: u32,
     pub height: u32,
-    /// The url of the photo
+    /// The direct url of the image file for this size
     pub source: String,
+    /// The Flickr photo page url for this size
+    pub url: String,
+    pub media: String,
 }
 
+/// The available sizes for a photo, along with the calling user's permissions on it
 #[derive(Deserialize, Debug, Hash)]
-struct FlickrSizes {
-    size: Vec<FlickrSize>,
+pub struct PhotoSizes {
+    pub canblog: u32,
+    pub canprint: u32,
+    pub candownload: u32,
+    pub size: Vec<FlickrSize>,
 }
 
 #[derive(Deserialize, Debug, Hash)]
 struct FlickrSizeWrapper {
-    sizes: FlickrSizes,
+    sizes: PhotoSizes,
 }
 
 #[derive(Deserialize, Debug, Hash)]
@@ -28,12 +35,10 @@ enum FlickrGetSizesAnswer {
     Err(FlickrError),
 }
 
-impl Resultable<Vec<FlickrSize>, Box<dyn Error>> for FlickrGetSizesAnswer {
-    fn to_result(self) -> Result<Vec<FlickrSize>, Box<dyn Error>> {
+impl Resultable<PhotoSizes, Box<dyn Error>> for FlickrGetSizesAnswer {
+    fn to_result(self) -> Result<PhotoSizes, Box<dyn Error>> {
         match self {
-            FlickrGetSizesAnswer::Ok(FlickrSizeWrapper {
-                sizes: FlickrSizes { size },
-            }) => Ok(size),
+            FlickrGetSizesAnswer::Ok(FlickrSizeWrapper { sizes }) => Ok(sizes),
             FlickrGetSizesAnswer::Err(e) => Err(Box::new(e)),
         }
     }
@@ -42,7 +47,7 @@ impl Resultable<Vec<FlickrSize>, Box<dyn Error>> for FlickrGetSizesAnswer {
 impl PhotoRequestBuilder {
     /// [flickr.photos.getSizes](https://www.flickr.com/services/api/flickr.photos.getSizes.html)
     /// endpoint. Returns the available sizes for the photo of the given ID.
-    pub async fn get_sizes(&self, id: &String) -> Result<Vec<FlickrSize>, Box<dyn Error>> {
+    pub async fn get_sizes(&self, id: &String) -> Result<PhotoSizes, Box<dyn Error>> {
         let mut params = vec![
             ("nojsoncallback", "1".into()),
             ("method", "flickr.photos.getSizes".into()),

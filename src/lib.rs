@@ -24,7 +24,7 @@ static URL_API: &str = "https://api.flickr.com/services/rest/";
 
 static URL_UPLOAD: &str = "https://up.flickr.com/services/upload/";
 
-pub use get_sizes::FlickrSize;
+pub use get_sizes::{FlickrSize, PhotoSizes};
 pub use test_login::UserData;
 
 /// This is meant to turn the abominations the XML conversion creates into easier on the eyes

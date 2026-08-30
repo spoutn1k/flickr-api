@@ -51,6 +51,8 @@ pub struct PhotoInfo {
     #[serde(deserialize_with = "deserialize_content")]
     pub comments: String,
 
+    pub visibility: Visibility,
+
     // Only present when authenticated as the photo's owner
     pub permissions: Option<Permissions>,
     pub editability: Editability,
@@ -86,6 +88,13 @@ pub struct Dates {
     pub takengranularity: u32,
     pub takenunknown: String,
     pub lastupdate: String,
+}
+
+#[derive(Deserialize, Debug, Hash)]
+pub struct Visibility {
+    pub ispublic: u32,
+    pub isfriend: u32,
+    pub isfamily: u32,
 }
 
 #[derive(Deserialize, Debug, Hash)]
@@ -242,6 +251,7 @@ mod tests {
             "originalformat":"jpg","owner":{"nsid":"1@N00","username":"u","realname":"r",
             "location":"","iconserver":"1","iconfarm":1,"path_alias":null},
             "title":{"_content":"t"},"description":{"_content":"d"},
+            "visibility":{"ispublic":1,"isfriend":0,"isfamily":0},
             "dates":{"posted":"1","taken":"2026-01-25 15:00:01","takengranularity":0,
             "takenunknown":"0","lastupdate":"1"},"views":"1",
             "editability":{"cancomment":0,"canaddmeta":0},

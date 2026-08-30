@@ -45,7 +45,7 @@ async fn main() -> Result<ExitCode, Box<dyn Error>> {
 
     let sizes = client.photos().get_sizes(&args.id).await?;
 
-    for size in &sizes {
+    for size in &sizes.size {
         println!(
             "{:<12} {:>5}x{:<5} {}",
             size.label, size.width, size.height, size.source
